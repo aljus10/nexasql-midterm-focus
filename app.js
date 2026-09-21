@@ -265,7 +265,26 @@ let supabaseClient = null;
 let currentUser = null;
 let cloudSyncing = false;
 
+let activeSupabaseConfig = null;
+
+async function fetchServerConfig() {
+  try {
+    const res = await fetch('/api/config', { cache: 'no-store' });
+    if (!res.ok) return null;
+    const cfg = await res.json();
+    if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
+      return { url: cfg.supabaseUrl, anonKey: cfg.supabaseAnonKey };
+    }
+  } catch {
+    // Local dev or non-Vercel environment
+  }
+  return null;
+}
+
 function getSupabaseConfig() {
+  if (activeSupabaseConfig && activeSupabaseConfig.url && activeSupabaseConfig.anonKey) {
+    return activeSupabaseConfig;
+  }
   try {
     const raw = localStorage.getItem(SUPABASE_CONFIG_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -275,16 +294,24 @@ function getSupabaseConfig() {
 }
 
 function saveSupabaseConfig(url, anonKey) {
-  localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({ url: url.trim(), anonKey: anonKey.trim() }));
+  activeSupabaseConfig = { url: url.trim(), anonKey: anonKey.trim() };
+  localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(activeSupabaseConfig));
   initSupabase();
 }
 
-function initSupabase() {
+async function initSupabase() {
+  // 1. First attempt to load credentials automatically from Vercel /api/config
+  const srvCfg = await fetchServerConfig();
+  if (srvCfg) {
+    activeSupabaseConfig = srvCfg;
+  }
+
+  // 2. Fallback to localStorage
   const config = getSupabaseConfig();
   if (config && config.url && config.anonKey) {
     try {
       supabaseClient = createClient(config.url, config.anonKey);
-      checkCurrentUser();
+      await checkCurrentUser();
       supabaseClient.auth.onAuthStateChange((event, session) => {
         currentUser = session?.user || null;
         updateCloudUI();
