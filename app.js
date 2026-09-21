@@ -741,10 +741,21 @@ function bindShell() {
   $$('#nav .nav-item').forEach(btn => btn.addEventListener('click', () => navigate(btn.dataset.page)));
   const soundBtn = $('#soundToggleBtn');
   const mobileMenu = $('#mobileMenuBtn');
+  const sidebarOverlay = $('#sidebarOverlay');
   const exportBtn = $('#exportProgressBtn');
   const importInput = $('#importProgressInput');
   if (soundBtn) soundBtn.addEventListener('click', toggleSound);
-  if (mobileMenu) mobileMenu.addEventListener('click', () => $('.sidebar')?.classList.toggle('open'));
+  const closeSidebar = () => {
+    $('.sidebar')?.classList.remove('open');
+    sidebarOverlay?.classList.remove('active');
+  };
+  if (mobileMenu) {
+    mobileMenu.addEventListener('click', () => {
+      const isOpen = $('.sidebar')?.classList.toggle('open');
+      sidebarOverlay?.classList.toggle('active', !!isOpen);
+    });
+  }
+  if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
   if (exportBtn) exportBtn.addEventListener('click', exportProgress);
   if (importInput) importInput.addEventListener('change', importProgress);
 }
@@ -1153,10 +1164,19 @@ function updateTopStats(){
 
 function renderAll(){updateTopStats();updateCloudUI();renderHome();renderLearn();renderPractice();renderMock();renderCheat();renderSchema();}
 function navigate(page){
-  currentPage=page; $$('.page').forEach(x=>x.classList.remove('active')); $(`#page-${page}`).classList.add('active'); $$('#nav .nav-item').forEach(x=>x.classList.toggle('active',x.dataset.page===page));
+  currentPage=page;
+  $$('.page').forEach(x=>x.classList.remove('active'));
+  $(`#page-${page}`).classList.add('active');
+  $$('#nav .nav-item').forEach(x=>x.classList.toggle('active',x.dataset.page===page));
   const titles={home:['MIDTERM STUDY','Home'],learn:['CORE PATTERNS','Learn'],practice:['ACTIVE PRACTICE','Practice'],mock:['EXAM MODE','Mock Midterm'],cheatsheet:['QUICK REFERENCE','Cheat Sheet'],schema:['YOUR DATABASE','Schema']};
-  $('#pageEyebrow').textContent=titles[page][0]; $('#pageTitle').textContent=titles[page][1]; $('.sidebar').classList.remove('open');
-  if(page==='home')renderHome(); if(page==='practice')renderPractice(); if(page==='mock')renderMock();
+  $('#pageEyebrow').textContent=titles[page][0];
+  $('#pageTitle').textContent=titles[page][1];
+  $('.sidebar')?.classList.remove('open');
+  $('#sidebarOverlay')?.classList.remove('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if(page==='home')renderHome();
+  if(page==='practice')renderPractice();
+  if(page==='mock')renderMock();
 }
 
 function renderHome(){

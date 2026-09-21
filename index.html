@@ -52,18 +52,21 @@
         <label class="text-button file-button">Import progress<input id="importProgressInput" type="file" accept="application/json,.json" /></label>
       </div>
     </aside>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
     <main class="main">
       <header class="topbar">
-        <button id="mobileMenuBtn" class="icon-button mobile-only">☰</button>
-        <div>
-          <div class="eyebrow" id="pageEyebrow">MIDTERM STUDY</div>
-          <h2 id="pageTitle">Home</h2>
+        <div class="topbar-left">
+          <button id="mobileMenuBtn" class="icon-button mobile-only" aria-label="Open menu">☰</button>
+          <div class="topbar-title-wrap">
+            <div class="eyebrow" id="pageEyebrow">MIDTERM STUDY</div>
+            <h2 id="pageTitle">Home</h2>
+          </div>
         </div>
-        <div class="top-stats">
-          <button id="soundToggleBtn" class="sound-toggle-btn" title="Toggle Sound Effects">🔊</button>
-          <div class="top-stat"><span>🔥</span><strong id="streakValue">0</strong><small>day streak</small></div>
-          <div class="top-stat"><span>XP</span><strong id="xpValue">0</strong><small>earned</small></div>
+        <div class="topbar-right">
+          <button id="soundToggleBtn" class="sound-toggle-btn" title="Toggle Sound Effects" aria-label="Toggle Sound">🔊</button>
+          <div class="top-stat streak-stat"><span>🔥</span><strong id="streakValue">0</strong><small>day streak</small></div>
+          <div class="top-stat xp-stat"><span>XP</span><strong id="xpValue">0</strong><small>earned</small></div>
         </div>
       </header>
 
