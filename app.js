@@ -1273,6 +1273,7 @@ function defaultProgress() {
     streak: {count:0,lastStudy:null},
     mockHistory: [],
     lessonViews: {},
+    flashcardMastered: [],
     createdAt: new Date().toISOString()
   };
 }
@@ -1284,7 +1285,7 @@ function normalizeLadder(raw={}) {
   }
   return base;
 }
-function loadProgress(){try{const raw=localStorage.getItem(PROGRESS_KEY); if(!raw)return defaultProgress(); const p=JSON.parse(raw); return {...defaultProgress(),...p,patternScores:{...defaultProgress().patternScores,...(p.patternScores||{})},ladder:normalizeLadder(p.ladder)};}catch{return defaultProgress();}}
+function loadProgress(){try{const raw=localStorage.getItem(PROGRESS_KEY); if(!raw)return defaultProgress(); const p=JSON.parse(raw); return {...defaultProgress(),...p,patternScores:{...defaultProgress().patternScores,...(p.patternScores||{})},ladder:normalizeLadder(p.ladder),flashcardMastered:Array.isArray(p.flashcardMastered)?p.flashcardMastered:[]};}catch{return defaultProgress();}}
 function saveProgress(){
   localStorage.setItem(PROGRESS_KEY,JSON.stringify(state));
   updateTopStats();
@@ -1330,19 +1331,20 @@ function updateTopStats(){
   if(xp) xp.textContent=state.xp;
 }
 
-function renderAll(){updateTopStats();updateCloudUI();renderHome();renderLearn();renderPractice();renderMock();renderCheat();renderSchema();}
+function renderAll(){updateTopStats();updateCloudUI();renderHome();renderLearn();renderFlashcards();renderPractice();renderMock();renderCheat();renderSchema();}
 function navigate(page){
   currentPage=page;
   $$('.page').forEach(x=>x.classList.remove('active'));
   $(`#page-${page}`).classList.add('active');
   $$('#nav .nav-item').forEach(x=>x.classList.toggle('active',x.dataset.page===page));
-  const titles={home:['MIDTERM STUDY','Home'],learn:['CORE PATTERNS','Learn'],practice:['ACTIVE PRACTICE','Practice'],mock:['EXAM MODE','Mock Midterm'],cheatsheet:['QUICK REFERENCE','Cheat Sheet'],schema:['YOUR DATABASE','Schema']};
+  const titles={home:['MIDTERM STUDY','Home'],learn:['CORE PATTERNS','Learn'],flashcards:['ACTIVE RECALL','SQL Flashcards'],practice:['ACTIVE PRACTICE','Practice'],mock:['EXAM MODE','Mock Midterm'],cheatsheet:['QUICK REFERENCE','Cheat Sheet'],schema:['YOUR DATABASE','Schema']};
   $('#pageEyebrow').textContent=titles[page][0];
   $('#pageTitle').textContent=titles[page][1];
   $('.sidebar')?.classList.remove('open');
   $('#sidebarOverlay')?.classList.remove('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if(page==='home')renderHome();
+  if(page==='flashcards')renderFlashcards();
   if(page==='practice')renderPractice();
   if(page==='mock')renderMock();
 }
@@ -2173,5 +2175,492 @@ function showModal(title,body,buttons){const root=$('#modalRoot');root.innerHTML
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2500);}
 function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function escapeHtml(v){return String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ==========================================================================
+   SQL FLASHCARDS: COMMON MIDTERM QUESTIONS & ACTIVE RECALL
+   ========================================================================== */
+const FLASHCARDS = [
+  {
+    id: 'fc-1',
+    category: 'KPIs & Metrics',
+    badge: 'TOTAL REVENUE',
+    question: 'How do you calculate total net sales / revenue across all completed orders?',
+    highlight: 'SUM(net_sales)',
+    table: 'fact_order_items',
+    examTip: 'Don’t use SUM(unit_price) or gross_sales unless asked for gross. Net sales already accounts for discounts and product quantities!',
+    sql: `SELECT SUM(net_sales) AS total_revenue\nFROM fact_order_items;`
+  },
+  {
+    id: 'fc-2',
+    category: 'KPIs & Metrics',
+    badge: 'TOTAL ORDERS',
+    question: 'How do you count the total number of orders placed?',
+    highlight: 'COUNT(DISTINCT order_number)',
+    table: 'fact_order_items',
+    examTip: '⚠️ In an order-items fact table, COUNT(*) counts rows/line-items (25,000), NOT unique orders (10,000)! Always use COUNT(DISTINCT order_number).',
+    sql: `SELECT COUNT(DISTINCT order_number) AS total_orders\nFROM fact_order_items;`
+  },
+  {
+    id: 'fc-3',
+    category: 'KPIs & Metrics',
+    badge: 'PHYSICAL QUANTITY',
+    question: 'How do you calculate the total number of physical product units sold?',
+    highlight: 'SUM(quantity)',
+    table: 'fact_order_items',
+    examTip: 'Quantity represents physical items shipped inside boxes. Never use COUNT(quantity) because COUNT only counts rows, not the pieces inside each row.',
+    sql: `SELECT SUM(quantity) AS total_units_sold\nFROM fact_order_items;`
+  },
+  {
+    id: 'fc-4',
+    category: 'KPIs & Metrics',
+    badge: 'AVERAGE ORDER VALUE',
+    question: 'How do you find the Average Order Value (AOV)?',
+    highlight: 'SUM(net_sales) / COUNT(DISTINCT order_number)',
+    table: 'fact_order_items',
+    examTip: 'AVG(net_sales) gives the average price per item line, NOT per order. Divide total revenue by distinct order count!',
+    sql: `SELECT\n  ROUND(SUM(net_sales) / COUNT(DISTINCT order_number), 2) AS average_order_value\nFROM fact_order_items;`
+  },
+  {
+    id: 'fc-5',
+    category: 'Top-N & Joins',
+    badge: 'BEST SELLERS',
+    question: 'Which are the Top 5 products by net sales, and how much did each generate?',
+    highlight: 'JOIN dim_product + GROUP BY + ORDER BY DESC + LIMIT 5',
+    table: 'fact_order_items f JOIN dim_product p',
+    examTip: 'Five steps: 1) SELECT name & SUM, 2) JOIN dim_product on product_id, 3) GROUP BY product_name, 4) ORDER BY sales DESC, 5) LIMIT 5.',
+    sql: `SELECT\n  p.product_name,\n  SUM(f.net_sales) AS total_sales\nFROM fact_order_items f\nJOIN dim_product p\n  ON f.product_id = p.product_id\nGROUP BY p.product_name\nORDER BY total_sales DESC\nLIMIT 5;`
+  },
+  {
+    id: 'fc-6',
+    category: 'Top-N & Joins',
+    badge: 'TOP CUSTOMERS',
+    question: 'Who are the top 3 highest-spending customers in total payments?',
+    highlight: 'JOIN dim_customer + SUM(total_paid) + LIMIT 3',
+    table: 'fact_order_items f JOIN dim_customer c',
+    examTip: 'Customer spending includes shipping fees and discounts, represented by total_paid in the fact table. Always group by customer_name and sort DESC.',
+    sql: `SELECT\n  c.customer_name,\n  SUM(f.total_paid) AS total_spent\nFROM fact_order_items f\nJOIN dim_customer c\n  ON f.customer_id = c.customer_id\nGROUP BY c.customer_name\nORDER BY total_spent DESC\nLIMIT 3;`
+  },
+  {
+    id: 'fc-7',
+    category: 'Top-N & Joins',
+    badge: 'CATEGORY RANKING',
+    question: 'What are the sales figures for each product category, ranked from highest to lowest?',
+    highlight: 'GROUP BY p.category ORDER BY sales DESC',
+    table: 'fact_order_items f JOIN dim_product p',
+    examTip: 'Every non-aggregated column appearing in SELECT (here, category) MUST be listed in GROUP BY.',
+    sql: `SELECT\n  p.category,\n  SUM(f.net_sales) AS category_revenue\nFROM fact_order_items f\nJOIN dim_product p\n  ON f.product_id = p.product_id\nGROUP BY p.category\nORDER BY category_revenue DESC;`
+  },
+  {
+    id: 'fc-8',
+    category: 'Filters & Place',
+    badge: 'CITY FILTER',
+    question: 'How do you find the total sales from customers living in Manila?',
+    highlight: `WHERE c.city = 'Manila'`,
+    table: 'fact_order_items f JOIN dim_customer c',
+    examTip: `Text literals in SQL require single quotes ('Manila') and exact casing. The WHERE clause always filters BEFORE any grouping occurs.`,
+    sql: `SELECT\n  SUM(f.net_sales) AS manila_revenue\nFROM fact_order_items f\nJOIN dim_customer c\n  ON f.customer_id = c.customer_id\nWHERE c.city = 'Manila';`
+  },
+  {
+    id: 'fc-9',
+    category: 'Filters & Place',
+    badge: 'GEOGRAPHIC BREAKDOWN',
+    question: 'How much revenue did each customer city generate, ordered from highest to lowest?',
+    highlight: 'GROUP BY c.city ORDER BY city_sales DESC',
+    table: 'fact_order_items f JOIN dim_customer c',
+    examTip: 'Ensure you join dim_customer for customer city. If Sir asks for seller city, join dim_seller instead!',
+    sql: `SELECT\n  c.city,\n  SUM(f.net_sales) AS city_sales\nFROM fact_order_items f\nJOIN dim_customer c\n  ON f.customer_id = c.customer_id\nGROUP BY c.city\nORDER BY city_sales DESC;`
+  },
+  {
+    id: 'fc-10',
+    category: 'Time & Trends',
+    badge: 'YEAR FILTER',
+    question: 'How do you calculate total sales made strictly during the year 2026?',
+    highlight: 'EXTRACT(YEAR FROM order_date) = 2026',
+    table: 'fact_order_items',
+    examTip: `Use EXTRACT(YEAR FROM order_date) = 2026 or a date range between '2026-01-01' AND '2026-12-31'. No joins needed if only filtering fact table dates!`,
+    sql: `SELECT\n  SUM(net_sales) AS sales_2026\nFROM fact_order_items\nWHERE EXTRACT(YEAR FROM order_date) = 2026;`
+  },
+  {
+    id: 'fc-11',
+    category: 'Time & Trends',
+    badge: 'MONTHLY TREND',
+    question: 'How do you show monthly sales trend for 2026 in chronological order?',
+    highlight: `DATE_TRUNC('month', order_date)::DATE + ORDER BY month ASC`,
+    table: 'fact_order_items',
+    examTip: '🚨 GOLDEN EXAM RULE: When the question asks for a "trend" or "over time", ORDER BY month ASC (chronological), NOT by sales DESC!',
+    sql: `SELECT\n  DATE_TRUNC('month', order_date)::DATE AS month,\n  SUM(net_sales) AS monthly_sales\nFROM fact_order_items\nWHERE EXTRACT(YEAR FROM order_date) = 2026\nGROUP BY DATE_TRUNC('month', order_date)::DATE\nORDER BY month ASC;`
+  },
+  {
+    id: 'fc-12',
+    category: 'Time & Trends',
+    badge: 'MONTH NUMBER',
+    question: 'How do you aggregate sales by month number (1 to 12) across all years?',
+    highlight: 'EXTRACT(MONTH FROM order_date) AS month_num',
+    table: 'fact_order_items',
+    examTip: 'EXTRACT(MONTH FROM ...) returns an integer 1-12. Group and order by the same expression so the report reads January to December.',
+    sql: `SELECT\n  EXTRACT(MONTH FROM order_date) AS month_num,\n  SUM(net_sales) AS total_sales\nFROM fact_order_items\nGROUP BY EXTRACT(MONTH FROM order_date)\nORDER BY month_num ASC;`
+  },
+  {
+    id: 'fc-13',
+    category: 'SQL Rules',
+    badge: 'WHERE VS HAVING',
+    question: 'What is the fundamental difference between WHERE and HAVING?',
+    highlight: 'WHERE = rows before grouping | HAVING = aggregates after grouping',
+    table: 'SQL Execution Order',
+    examTip: 'Never put SUM() or COUNT() in WHERE! If you need to filter "categories with sales > 100,000", that condition MUST be in HAVING after GROUP BY.',
+    sql: `SELECT\n  p.category,\n  SUM(f.net_sales) AS total_sales\nFROM fact_order_items f\nJOIN dim_product p ON f.product_id = p.product_id\nWHERE f.quantity > 1             -- WHERE: filters rows BEFORE grouping\nGROUP BY p.category\nHAVING SUM(f.net_sales) > 100000; -- HAVING: filters aggregate AFTER grouping`
+  },
+  {
+    id: 'fc-14',
+    category: 'SQL Rules',
+    badge: 'FACT VS DIMENSION',
+    question: 'What is the difference between a Fact table and a Dimension table in Star Schema?',
+    highlight: 'Fact = numerical metrics & FKs | Dimension = descriptive attributes',
+    table: 'Star Schema Architecture',
+    examTip: 'Fact tables answer "HOW MUCH / HOW MANY" (sales, quantity, dates). Dimension tables answer "WHO, WHAT, WHERE" (customer name, city, category).',
+    sql: `-- Fact Table (Numbers & Foreign Keys)\nSELECT order_item_id, net_sales, quantity, product_id, customer_id\nFROM fact_order_items LIMIT 2;\n\n-- Dimension Table (Attributes & Context)\nSELECT product_id, product_name, category, brand\nFROM dim_product LIMIT 2;`
+  },
+  {
+    id: 'fc-15',
+    category: 'SQL Rules',
+    badge: 'HAVING FILTER',
+    question: 'How do you list only sellers who have handled more than 500 unique orders?',
+    highlight: 'HAVING COUNT(DISTINCT f.order_number) > 500',
+    table: 'fact_order_items f JOIN dim_seller s',
+    examTip: 'Since 500 orders is an aggregate count, it cannot go in WHERE. Place it in HAVING after GROUP BY s.shop_name.',
+    sql: `SELECT\n  s.shop_name,\n  COUNT(DISTINCT f.order_number) AS orders_count\nFROM fact_order_items f\nJOIN dim_seller s\n  ON f.seller_id = s.seller_id\nGROUP BY s.shop_name\nHAVING COUNT(DISTINCT f.order_number) > 500\nORDER BY orders_count DESC;`
+  },
+  {
+    id: 'fc-16',
+    category: 'Top-N & Joins',
+    badge: 'MULTI-TABLE JOIN',
+    question: 'How do you query customer name, product name, and revenue in a single query?',
+    highlight: 'Chain multiple JOIN ... ON statements to the fact table',
+    table: 'fact_order_items f + dim_customer c + dim_product p',
+    examTip: 'Always start FROM the central fact table fact_order_items, then add one JOIN per dimension table connecting PK to FK.',
+    sql: `SELECT\n  c.customer_name,\n  p.product_name,\n  f.quantity,\n  f.net_sales\nFROM fact_order_items f\nJOIN dim_customer c\n  ON f.customer_id = c.customer_id\nJOIN dim_product p\n  ON f.product_id = p.product_id\nORDER BY f.net_sales DESC\nLIMIT 10;`
+  }
+];
+
+let flashcardIdx = 0;
+let flashcardCategory = 'All';
+let flashcardFlipped = false;
+let flashcardTouchStartX = 0;
+let flashcardTouchStartY = 0;
+
+function toggleFlashcardMastered(cardId) {
+  if (!state.flashcardMastered) state.flashcardMastered = [];
+  const id = cardId || (getFilteredFlashcards()[flashcardIdx]?.id);
+  if (!id) return;
+  const idx = state.flashcardMastered.indexOf(id);
+  if (idx !== -1) {
+    state.flashcardMastered.splice(idx, 1);
+    toast('Card unmarked.');
+    playClick();
+  } else {
+    state.flashcardMastered.push(id);
+    state.xp += 5;
+    updateStreak(true);
+    toast('★ Card mastered! +5 XP');
+    playSuccess();
+  }
+  saveProgress();
+  renderFlashcards();
+}
+
+function getFilteredFlashcards() {
+  if (flashcardCategory === 'All') return FLASHCARDS;
+  return FLASHCARDS.filter(c => c.category === flashcardCategory);
+}
+
+function renderFlashcards() {
+  const container = $('#page-flashcards');
+  if (!container) return;
+
+  const pool = getFilteredFlashcards();
+  if (flashcardIdx >= pool.length) flashcardIdx = Math.max(0, pool.length - 1);
+  const card = pool[flashcardIdx];
+  const masteredCount = (state.flashcardMastered || []).length;
+  const masteredPct = Math.round((masteredCount / FLASHCARDS.length) * 100);
+  const isMastered = card && state.flashcardMastered && state.flashcardMastered.includes(card.id);
+
+  const categories = ['All', 'KPIs & Metrics', 'Top-N & Joins', 'Filters & Place', 'Time & Trends', 'SQL Rules'];
+
+  container.innerHTML = `
+    <div class="flashcards-layout">
+      <!-- Top Filters -->
+      <div class="flashcards-topbar">
+        <div class="flashcard-categories">
+          ${categories.map(cat => `
+            <button class="category-pill ${cat === flashcardCategory ? 'active' : ''}" data-cat="${escapeHtml(cat)}">
+              ${escapeHtml(cat)}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Progress Summary Bar -->
+      <div class="flashcard-progress-card">
+        <div class="flashcard-progress-info">
+          <div>
+            <strong>${masteredCount} of ${FLASHCARDS.length} Mastered (${masteredPct}%)</strong>
+            <br>
+            <small>Active recall mode · Tap card to flip · Swipe or use arrows</small>
+          </div>
+        </div>
+        <div style="min-width: 110px; text-align: right;">
+          <div class="progress-track" style="height: 6px; width: 100px; margin-left: auto;">
+            <span style="width: ${masteredPct}%; background: var(--good);"></span>
+          </div>
+          <small style="color: var(--muted); font-size: 10px;">${pool.length} in this filter</small>
+        </div>
+      </div>
+
+      <!-- 3D Flashcard Stage -->
+      ${card ? `
+        <div class="flashcard-stage ${flashcardFlipped ? 'flipped' : ''}" id="flashcardStage" role="button" tabindex="0" aria-label="Flashcard: ${escapeHtml(card.question)}">
+          <div class="flashcard-card">
+            <!-- FRONT FACE -->
+            <div class="flashcard-face flashcard-front">
+              <div class="card-top-row">
+                <span class="card-badge">${escapeHtml(card.badge)}</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="pill" style="font-size:10px;">${escapeHtml(card.category)}</span>
+                  ${isMastered ? '<span class="card-master-badge">★ Mastered</span>' : ''}
+                </div>
+              </div>
+
+              <div class="card-question">
+                <h2>${escapeHtml(card.question)}</h2>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                  <span class="pill" style="border-color: rgba(84,215,197,0.3); color: var(--accent-2); font-size:11px;">
+                    🎯 Target: ${escapeHtml(card.highlight)}
+                  </span>
+                  <span class="pill" style="font-size:11px;">
+                    📂 ${escapeHtml(card.table)}
+                  </span>
+                </div>
+                <div class="card-tap-prompt">
+                  <span>👆 Tap anywhere on card or press Space to see SQL answer</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- BACK FACE -->
+            <div class="flashcard-face flashcard-back">
+              <div class="card-top-row">
+                <span class="card-badge" style="background: rgba(124,140,255,0.16); border-color: rgba(124,140,255,0.4); color: #9bb3ff;">SQL SOLUTION</span>
+                <span class="card-tap-prompt" style="font-size:11px;">👆 Tap to flip back</span>
+              </div>
+
+              <div class="card-answer-body">
+                <div class="card-answer-highlight">
+                  <span>⚡ Formula: ${escapeHtml(card.highlight)}</span>
+                </div>
+                <div class="card-sql-preview">${escapeHtml(card.sql)}</div>
+                <div class="card-exam-tip">
+                  <strong>💡 Midterm Tip:</strong> ${escapeHtml(card.examTip)}
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--muted);">
+                <span>Table: <code>${escapeHtml(card.table)}</code></span>
+                <span style="color:var(--accent); font-weight:700;">NexaCart Star Schema</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : `
+        <div class="card empty-state" style="padding: 40px 20px; text-align: center;">
+          <p>No flashcards found in this category.</p>
+          <button class="btn secondary" id="fcResetCatBtn">Show All Categories</button>
+        </div>
+      `}
+
+      <!-- Bottom Controls -->
+      <div class="flashcard-controls">
+        <div class="flashcard-nav-buttons">
+          <button class="btn secondary" id="fcPrevBtn" ${flashcardIdx <= 0 ? 'disabled' : ''}>
+            ← Prev
+          </button>
+          <span class="card-counter">
+            ${pool.length ? `${flashcardIdx + 1} / ${pool.length}` : '0 / 0'}
+          </span>
+          <button class="btn secondary" id="fcNextBtn" ${flashcardIdx >= pool.length - 1 ? 'disabled' : ''}>
+            Next →
+          </button>
+        </div>
+
+        <div class="actions" style="margin: 0;">
+          <button class="btn" id="fcFlipBtn">
+            🔄 Flip Card
+          </button>
+          ${card ? `
+            <button class="btn ${isMastered ? 'secondary' : 'good'}" id="fcMasterBtn" style="${isMastered ? 'color: var(--good); border-color: rgba(98,212,157,0.4);' : ''}">
+              ${isMastered ? '★ Mastered' : '☆ Mark as Mastered (+5 XP)'}
+            </button>
+          ` : ''}
+          <button class="btn ghost small" id="fcShuffleBtn" title="Shuffle cards">
+            🔀 Shuffle
+          </button>
+        </div>
+      </div>
+
+      <!-- Keyboard & Mobile Tips -->
+      <div style="text-align: center; font-size: 11px; color: #5a6b8c; padding: 4px 0 16px;">
+        💡 <strong>Mobile:</strong> Swipe left/right to change cards, tap to flip. &nbsp;|&nbsp; <strong>Desktop:</strong> ←/→ arrows, Space to flip, M to master.
+      </div>
+    </div>
+  `;
+
+  // Bind Category Buttons
+  $$('.category-pill').forEach(btn => {
+    btn.onclick = () => {
+      flashcardCategory = btn.dataset.cat;
+      flashcardIdx = 0;
+      flashcardFlipped = false;
+      playClick();
+      renderFlashcards();
+    };
+  });
+
+  if ($('#fcResetCatBtn')) {
+    $('#fcResetCatBtn').onclick = () => {
+      flashcardCategory = 'All';
+      flashcardIdx = 0;
+      flashcardFlipped = false;
+      playClick();
+      renderFlashcards();
+    };
+  }
+
+  // Bind Card Flip by clicking stage
+  const stage = $('#flashcardStage');
+  if (stage) {
+    stage.onclick = () => {
+      flashcardFlipped = !flashcardFlipped;
+      playSnap();
+      renderFlashcards();
+    };
+
+    // Touch Swipe Navigation for Phones
+    stage.addEventListener('touchstart', e => {
+      flashcardTouchStartX = e.changedTouches[0].screenX;
+      flashcardTouchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    stage.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].screenX - flashcardTouchStartX;
+      const dy = e.changedTouches[0].screenY - flashcardTouchStartY;
+      if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy)) {
+        if (dx < 0 && flashcardIdx < pool.length - 1) {
+          // Swipe Left -> Next
+          flashcardIdx++;
+          flashcardFlipped = false;
+          playClick();
+          renderFlashcards();
+        } else if (dx > 0 && flashcardIdx > 0) {
+          // Swipe Right -> Prev
+          flashcardIdx--;
+          flashcardFlipped = false;
+          playClick();
+          renderFlashcards();
+        }
+      }
+    }, { passive: true });
+  }
+
+  // Bind Control Buttons
+  if ($('#fcPrevBtn')) {
+    $('#fcPrevBtn').onclick = () => {
+      if (flashcardIdx > 0) {
+        flashcardIdx--;
+        flashcardFlipped = false;
+        playClick();
+        renderFlashcards();
+      }
+    };
+  }
+
+  if ($('#fcNextBtn')) {
+    $('#fcNextBtn').onclick = () => {
+      if (flashcardIdx < pool.length - 1) {
+        flashcardIdx++;
+        flashcardFlipped = false;
+        playClick();
+        renderFlashcards();
+      }
+    };
+  }
+
+  if ($('#fcFlipBtn')) {
+    $('#fcFlipBtn').onclick = () => {
+      flashcardFlipped = !flashcardFlipped;
+      playSnap();
+      renderFlashcards();
+    };
+  }
+
+  if ($('#fcMasterBtn')) {
+    $('#fcMasterBtn').onclick = () => {
+      toggleFlashcardMastered(card?.id);
+    };
+  }
+
+  if ($('#fcShuffleBtn')) {
+    $('#fcShuffleBtn').onclick = () => {
+      if (pool.length > 1) {
+        let nextIdx = Math.floor(Math.random() * pool.length);
+        if (nextIdx === flashcardIdx) nextIdx = (nextIdx + 1) % pool.length;
+        flashcardIdx = nextIdx;
+        flashcardFlipped = false;
+        playClick();
+        renderFlashcards();
+      }
+    };
+  }
+
+  // Attach Global Keyboard Handler once
+  if (!window._flashcardsKeyboardBound) {
+    window._flashcardsKeyboardBound = true;
+    window.addEventListener('keydown', e => {
+      if (currentPage !== 'flashcards') return;
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      const p = getFilteredFlashcards();
+      if (e.code === 'Space') {
+        e.preventDefault();
+        flashcardFlipped = !flashcardFlipped;
+        playSnap();
+        renderFlashcards();
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        if (flashcardIdx > 0) {
+          flashcardIdx--;
+          flashcardFlipped = false;
+          playClick();
+          renderFlashcards();
+        }
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        if (flashcardIdx < p.length - 1) {
+          flashcardIdx++;
+          flashcardFlipped = false;
+          playClick();
+          renderFlashcards();
+        }
+      } else if (e.code === 'KeyM') {
+        e.preventDefault();
+        if (p[flashcardIdx]) {
+          toggleFlashcardMastered(p[flashcardIdx].id);
+        }
+      }
+    });
+  }
+}
 
 init();
