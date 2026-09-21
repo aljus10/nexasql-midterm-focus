@@ -1296,10 +1296,10 @@ function saveProgress(){
 function readiness(){return Math.round(Object.values(state.patternScores).reduce((a,b)=>a+b,0)/Object.keys(PATTERNS).length);}
 function stageFor(score){return score<35?'Guided':score<70?'Coached':'Exam-ready';}
 const LADDER_STAGES = {
-  1:{title:'Arrange lines',short:'See the SQL pattern',icon:'↕'},
-  2:{title:'Build from blocks',short:'Put SQL pieces together',icon:'▦'},
-  3:{title:'Fill the gaps',short:'Recall missing pieces',icon:'✎'},
-  4:{title:'Type from scratch',short:'Answer like the midterm',icon:'⌨'}
+  1:{title:'Arrange Clauses',short:'Order the SQL clauses',icon:'↕'},
+  2:{title:'Build Blocks',short:'Snap keywords to tables & conditions',icon:'▦'},
+  3:{title:'Fill Gaps',short:'Recall missing SQL terms',icon:'✎'},
+  4:{title:'Type Query',short:'Write SQL from scratch',icon:'⌨'}
 };
 function solvedAt(pattern,stage){return state.ladder?.[pattern]?.[String(stage)]||[];}
 function unlockedStage(pattern){
@@ -1337,7 +1337,7 @@ function navigate(page){
   $$('.page').forEach(x=>x.classList.remove('active'));
   $(`#page-${page}`).classList.add('active');
   $$('#nav .nav-item').forEach(x=>x.classList.toggle('active',x.dataset.page===page));
-  const titles={home:['MIDTERM STUDY','Home'],learn:['CORE PATTERNS','Learn'],flashcards:['ACTIVE RECALL','SQL Flashcards'],practice:['ACTIVE PRACTICE','Practice'],mock:['EXAM MODE','Mock Midterm'],cheatsheet:['QUICK REFERENCE','Cheat Sheet'],schema:['YOUR DATABASE','Schema']};
+  const titles={home:['MIDTERM PREP','Home'],learn:['CORE PATTERNS','Learn'],flashcards:['ACTIVE RECALL','SQL Flashcards'],practice:['ACTIVE PRACTICE','Practice'],mock:['EXAM MODE','Mock Midterm'],cheatsheet:['QUICK REFERENCE','Cheat Sheet'],schema:['DATABASE','Schema']};
   $('#pageEyebrow').textContent=titles[page][0];
   $('#pageTitle').textContent=titles[page][1];
   $('.sidebar')?.classList.remove('open');
@@ -1355,44 +1355,49 @@ function renderHome(){
     <div class="hero">
       <div class="hero-grid">
         <div>
-          <div class="eyebrow">FOCUS ON WHAT SIR IS MOST LIKELY TO ASK</div>
-          <h1>Recognize the pattern first.<br>Type SQL only when you are ready.</h1>
-          <p>Each business-question pattern now uses a four-step ladder: arrange SQL lines, build from smaller blocks, fill the gaps, then type the query from scratch. The goal is pattern recognition before memorization.</p>
-          <div class="actions"><button class="btn" id="continueBtn">Continue with ${escapeHtml(PATTERNS[weak].title)}</button><button class="btn secondary" id="quickBtn">Practice weakest pattern</button></div>
+          <div class="eyebrow">MIDTERM SQL PREP</div>
+          <h1>Learn SQL from business questions.</h1>
+          <p>Master the 6 core query patterns with interactive puzzle steps, active recall flashcards, and timed mock exams.</p>
+          <div class="actions"><button class="btn" id="continueBtn">Continue: ${escapeHtml(PATTERNS[weak].title)}</button><button class="btn secondary" id="quickBtn">Practice Weakest</button></div>
         </div>
         <div class="focus-card">
-          <div class="eyebrow">ONE RULE TO REMEMBER</div>
-          <h3>See → arrange → complete → type.</h3>
-          <p>You will repeatedly see the same SQL shape until it feels familiar.</p>
-          <div class="code-block">Sales → SUM(net_sales)\nOrders → COUNT(DISTINCT order_number)\nUnits → SUM(quantity)\nCustomer spending → SUM(total_paid)</div>
+          <div class="eyebrow">KEY FORMULAS</div>
+          <div class="code-block" style="margin-top:6px">Sales  → SUM(net_sales)
+Orders → COUNT(DISTINCT order_number)
+Units  → SUM(quantity)
+Spent  → SUM(total_paid)</div>
         </div>
       </div>
     </div>
     <div class="section grid-4">
-      ${statCard('Midterm readiness',readiness()+'%','Average mastery across six patterns')}
-      ${statCard('Questions solved',solved,'Correct at least once')}
-      ${statCard('Total attempts',attempts,'Every query check counts')}
-      ${statCard('Best mock',mockBest ? `${mockBest}/10` : '—','Your strongest mock result')}
+      ${statCard('Readiness',readiness()+'%','Mastery across 6 patterns')}
+      ${statCard('Solved',solved,'Questions completed')}
+      ${statCard('Attempts',attempts,'Total queries tested')}
+      ${statCard('Mock Best',mockBest ? `${mockBest}/10` : '—','Highest exam score')}
     </div>
     <div class="section">
-      <div class="section-head"><div><h3>Your six patterns</h3><p>Master these first. Advanced SQL can wait until after the midterm.</p></div></div>
+      <div class="section-head"><div><h3>Core Exam Patterns</h3><p>The 6 query types most frequently asked on midterm exams.</p></div></div>
       <div class="grid-3">${Object.values(PATTERNS).map(patternCard).join('')}</div>
     </div>
     <div class="section grid-2">
       <div class="card">
-        <div class="section-head"><div><h3>Recent practice</h3><p>Your latest attempts.</p></div></div>
-        ${state.recent.length?state.recent.slice(0,6).map(r=>`<div class="metric-row"><span>${escapeHtml(r.prompt)}</span><code>${r.correct?'✓ correct':'↻ review'}</code></div>`).join(''):'<div class="empty-state">No practice yet. Start with the recommended pattern.</div>'}
+        <div class="section-head"><div><h3>Recent Activity</h3><p>Your latest question attempts.</p></div></div>
+        ${state.recent.length?state.recent.slice(0,5).map(r=>`<div class="metric-row"><span>${escapeHtml(r.prompt)}</span><code>${r.correct?'✓ correct':'↻ review'}</code></div>`).join(''):'<div class="empty-state">No practice yet. Start with Pattern 1.</div>'}
       </div>
       <div class="card">
-        <div class="section-head"><div><h3>Backup your progress</h3><p>Your progress lives in this browser. Export occasionally.</p></div></div>
-        <div class="actions"><button class="btn secondary" id="homeExportBtn">Export progress</button><label class="btn ghost file-button">Import progress<input id="homeImportInput" type="file" accept="application/json,.json"></label><button class="btn danger small" id="resetProgressBtn">Reset progress</button></div>
+        <div class="section-head"><div><h3>Study Tools</h3><p>Quick access to exam study modes.</p></div></div>
+        <div class="actions" style="margin-top:8px">
+          <button class="btn secondary" id="homeFlashcardsBtn">🗂 Open Flashcards</button>
+          <button class="btn secondary" id="homeCheatBtn">≡ Open Cheat Sheet</button>
+          <button class="btn ghost" id="homeMockBtn">◎ Take Mock Exam</button>
+        </div>
       </div>
     </div>`;
   $('#continueBtn').onclick=()=>{practiceMode=weak;practiceStage=unlockedStage(weak);currentQuestion=null;puzzleState=null;navigate('practice');};
   $('#quickBtn').onclick=()=>startQuickPractice();
-  $('#homeExportBtn').onclick=exportProgress;
-  $('#homeImportInput').onchange=importProgress;
-  $('#resetProgressBtn').onclick=confirmReset;
+  $('#homeFlashcardsBtn').onclick=()=>navigate('flashcards');
+  $('#homeCheatBtn').onclick=()=>navigate('cheatsheet');
+  $('#homeMockBtn').onclick=()=>navigate('mock');
   $$('.pattern-card').forEach(c=>c.onclick=()=>{currentLesson=c.dataset.pattern;navigate('learn');renderLearn();});
 }
 function statCard(label,value,foot){return `<div class="card stat-card"><div class="label">${label}</div><div class="value">${value}</div><div class="foot">${foot}</div></div>`;}
@@ -1402,11 +1407,11 @@ function weakestPattern(){return Object.keys(PATTERNS).sort((a,b)=>(state.patter
 function renderLearn(){
   const p=PATTERNS[currentLesson];
   const unlocked=unlockedStage(p.id);
-  $('#page-learn').innerHTML=`<div class="lesson-layout"><div class="lesson-menu">${Object.values(PATTERNS).map(x=>`<button data-pattern="${x.id}" class="${x.id===currentLesson?'active':''}">${x.number}. ${x.title}<br><small>${x.short}</small></button>`).join('')}</div><div><div class="card lesson-content"><div class="eyebrow">PATTERN ${p.number}</div><h3>${p.title}</h3><p>${p.description}</p><div class="remember"><strong>Remember:</strong> ${p.memory}</div><div class="lesson-steps">${p.steps.map((s,i)=>`<div class="lesson-step"><b>${i+1}</b><div><strong>${s[0]}</strong><span>${s[1]}</span></div></div>`).join('')}</div><h4>Core example</h4><div class="code-block">${escapeHtml(p.example)}</div></div><div class="card section"><div class="section-head"><div><h3>How you will learn this pattern</h3><p>Recognition first. Blank-editor typing comes last.</p></div></div><div class="learning-ladder">${Object.entries(LADDER_STAGES).map(([n,st])=>{const num=Number(n), locked=num>unlocked, done=num<unlocked || (num===4 && solvedAt(p.id,4).length>0); const count=num<4?`${ladderProgress(p.id,num)}/2`:done?'started':'final'; return `<button class="ladder-step ${locked?'locked':''} ${num===unlocked?'current':''}" data-stage="${num}" ${locked?'disabled':''}><span class="ladder-icon">${st.icon}</span><span><b>${num}. ${st.title}</b><small>${st.short}</small></span><em>${done?'✓':count}</em></button>`;}).join('')}</div><div class="actions" style="margin-top:16px"><button class="btn" id="lessonPracticeBtn">Start ${escapeHtml(LADDER_STAGES[unlocked].title)}</button><button class="btn secondary" id="lessonMarkBtn">I reviewed this lesson</button></div></div></div></div>`;
+  $('#page-learn').innerHTML=`<div class="lesson-layout"><div class="lesson-menu">${Object.values(PATTERNS).map(x=>`<button data-pattern="${x.id}" class="${x.id===currentLesson?'active':''}">${x.number}. ${x.title}<br><small>${x.short}</small></button>`).join('')}</div><div><div class="card lesson-content"><div class="eyebrow">PATTERN ${p.number}</div><h3>${p.title}</h3><p>${p.description}</p><div class="remember"><strong>Key Rule:</strong> ${p.memory}</div><div class="lesson-steps">${p.steps.map((s,i)=>`<div class="lesson-step"><b>${i+1}</b><div><strong>${s[0]}</strong><span>${s[1]}</span></div></div>`).join('')}</div><h4 style="margin-top:16px">Query Example</h4><div class="code-block">${escapeHtml(p.example)}</div></div><div class="card section"><div class="section-head"><div><h3>Learning Stages</h3><p>Complete each stage to master this pattern.</p></div></div><div class="learning-ladder">${Object.entries(LADDER_STAGES).map(([n,st])=>{const num=Number(n), locked=num>unlocked, done=num<unlocked || (num===4 && solvedAt(p.id,4).length>0); const count=num<4?`${ladderProgress(p.id,num)}/2`:done?'started':'final'; return `<button class="ladder-step ${locked?'locked':''} ${num===unlocked?'current':''}" data-stage="${num}" ${locked?'disabled':''}><span class="ladder-icon">${st.icon}</span><span><b>${num}. ${st.title}</b><small>${st.short}</small></span><em>${done?'✓':count}</em></button>`;}).join('')}</div><div class="actions" style="margin-top:16px"><button class="btn" id="lessonPracticeBtn">Practice ${escapeHtml(LADDER_STAGES[unlocked].title)}</button><button class="btn secondary" id="lessonMarkBtn">Mark Reviewed (+3 XP)</button></div></div></div></div>`;
   $$('.lesson-menu button').forEach(b=>b.onclick=()=>{currentLesson=b.dataset.pattern;renderLearn();});
   $('#lessonPracticeBtn').onclick=()=>{practiceMode=currentLesson;practiceStage=unlockedStage(currentLesson);currentQuestion=null;puzzleState=null;navigate('practice');};
   $$('.ladder-step:not(.locked)').forEach(b=>b.onclick=()=>{practiceMode=currentLesson;practiceStage=Number(b.dataset.stage);currentQuestion=null;puzzleState=null;navigate('practice');});
-  $('#lessonMarkBtn').onclick=()=>{state.lessonViews[currentLesson]=(state.lessonViews[currentLesson]||0)+1;state.xp+=3;updateStreak(true);saveProgress();toast('Lesson review saved. +3 XP');renderHome();};
+  $('#lessonMarkBtn').onclick=()=>{state.lessonViews[currentLesson]=(state.lessonViews[currentLesson]||0)+1;state.xp+=3;updateStreak(true);saveProgress();toast('Review saved. +3 XP');renderHome();};
 }
 
 function renderPractice(){
@@ -1425,7 +1430,7 @@ function renderPractice(){
   const solvedCount=practiceStage<4?ladderProgress(p.id,practiceStage):(solvedAt(p.id,4).length||0);
 
   $('#page-practice').innerHTML=`
-    <div class="section-head"><div><h3>${p.title}</h3><p>Recognition ladder · mastery ${score}%</p></div><div class="actions"><select id="patternSelect" class="btn secondary">${Object.values(PATTERNS).map(x=>`<option value="${x.id}" ${x.id===p.id?'selected':''}>${x.number}. ${x.title}</option>`).join('')}<option value="weakest">Weakest pattern</option></select><button class="btn ghost small" id="newQuestionBtn">New question</button></div></div>
+    <div class="section-head"><div><h3>${p.title}</h3><p>Mastery: ${score}%</p></div><div class="actions"><select id="patternSelect" class="btn secondary">${Object.values(PATTERNS).map(x=>`<option value="${x.id}" ${x.id===p.id?'selected':''}>${x.number}. ${x.title}</option>`).join('')}<option value="weakest">Weakest pattern</option></select><button class="btn ghost small" id="newQuestionBtn">New question</button></div></div>
     ${renderStageLadder(p.id,practiceStage)}
     <div class="practice-layout section">
       <div>
@@ -1443,9 +1448,9 @@ function renderPractice(){
         ${renderPracticeStageWorkspace(currentQuestion, practiceStage)}
       </div>
       <aside>
-        <div class="card"><div class="section-head"><div><h3>What you are training</h3><p>${escapeHtml(stageInfo.short)}</p></div></div>${renderStageCoach(practiceStage,currentQuestion)}</div>
-        <div class="card" style="margin-top:16px"><h4 style="margin-top:0">Quick metric reminder</h4><div class="metric-list">${metricRowsMini()}</div></div>
-        ${practiceStage===4?`<div class="card" style="margin-top:16px"><div class="section-head"><div><h3>Hints</h3><p>Use only when stuck.</p></div><span class="pill" id="hintCount">${Math.min(practiceHints,3)}/3 used</span></div><div id="hintArea" class="hint-list">${renderHints()}</div></div>`:''}
+        <div class="card"><div class="section-head"><div><h3>SQL Guide</h3></div></div>${renderStageCoach(practiceStage,currentQuestion)}</div>
+        <div class="card" style="margin-top:16px"><h4 style="margin-top:0">Metric Cheat</h4><div class="metric-list">${metricRowsMini()}</div></div>
+        ${practiceStage===4?`<div class="card" style="margin-top:16px"><div class="section-head"><div><h3>Hints</h3></div><span class="pill" id="hintCount">${Math.min(practiceHints,3)}/3 used</span></div><div id="hintArea" class="hint-list">${renderHints()}</div></div>`:''}
       </aside>
     </div>`;
 
@@ -1462,14 +1467,14 @@ function renderStageLadder(pattern,current){
 
 function renderQuestionFormula(qn){
   const thing=qn.dimension==='None'?'Fact table':qn.dimension;
-  return `<div class="formula-strip"><div><small>THING / DIMENSION</small><strong>${escapeHtml(thing)}</strong></div><span>+</span><div><small>METRIC</small><strong>${escapeHtml(qn.metric)}</strong></div><span>+</span><div><small>FILTER</small><strong>${escapeHtml(qn.filters)}</strong></div><span>→</span><div><small>RESULT</small><strong>${escapeHtml(qn.sort)} · ${escapeHtml(qn.limit)}</strong></div></div>`;
+  return `<div class="formula-strip"><div><small>DIMENSION</small><strong>${escapeHtml(thing)}</strong></div><span>+</span><div><small>METRIC</small><strong>${escapeHtml(qn.metric)}</strong></div><span>+</span><div><small>FILTER</small><strong>${escapeHtml(qn.filters)}</strong></div><span>→</span><div><small>SORT & LIMIT</small><strong>${escapeHtml(qn.sort)} · ${escapeHtml(qn.limit)}</strong></div></div>`;
 }
 
 function renderStageCoach(stage,qn){
-  if(stage===1) return `<p class="coach-copy">Do not write SQL yet. Drag the complete SQL lines into the order SQL normally follows.</p><div class="pattern-chain"><span>SELECT</span><b>→</b><span>FROM</span><b>→</b><span>JOIN</span><b>→</b><span>WHERE</span><b>→</b><span>GROUP BY</span><b>→</b><span>ORDER BY</span><b>→</b><span>LIMIT</span></div><small class="muted-note">A query may skip some steps when they are not needed.</small>`;
-  if(stage===2) return `<p class="coach-copy">Now the lines are broken into smaller SQL pieces. Put the keyword next to the piece that belongs to it.</p><div class="remember"><strong>Relationship:</strong> JOIN table → ON key = key.</div>`;
-  if(stage===3) return `<p class="coach-copy">The structure is already visible. Use the word bank to recall the missing metric, table, filter, sort, or limit.</p><div class="remember"><strong>Goal:</strong> recognize what changes when the business question changes.</div>`;
-  return `<p class="coach-copy">Now answer exactly like the midterm: business question first, blank SQL editor second.</p>${renderDecoder(qn,true)}`;
+  if(stage===1) return `<div class="pattern-chain"><span>SELECT</span><b>→</b><span>FROM</span><b>→</b><span>JOIN</span><b>→</b><span>WHERE</span><b>→</b><span>GROUP BY</span><b>→</b><span>ORDER BY</span><b>→</b><span>LIMIT</span></div><small class="muted-note" style="display:block;margin-top:8px">Standard clause sequence.</small>`;
+  if(stage===2) return `<div class="remember"><strong>Join Rule:</strong> JOIN table ON fact_fk = dim_pk</div>`;
+  if(stage===3) return `<div class="remember"><strong>Recall:</strong> Fill the missing metric, table name, condition, or limit.</div>`;
+  return renderDecoder(qn,true);
 }
 
 function renderPracticeStageWorkspace(qn,stage){
@@ -1498,8 +1503,8 @@ function ensurePuzzleState(qn,stage){
 function renderBoardPuzzle(qn,stage){
   const ps=ensurePuzzleState(qn,stage);
   const isBlocks=stage===2;
-  const title=isBlocks?'Build the query from smaller blocks':'Snap the SQL clauses in order';
-  const sub=isBlocks?'Keywords, tables, conditions & math are separated. Tap or drag to place.':'Start with SELECT. Tap any piece to snap onto the board, or drag into a slot.';
+  const title=isBlocks?'Build Query from Blocks':'Snap Clauses in Order';
+  const sub=isBlocks?'Tap or drag pieces into the slots below.':'Arrange SELECT, FROM, JOIN, WHERE in order.';
   const placedCount=ps.board.filter(x=>x!==null).length;
 
   return `
@@ -1509,14 +1514,14 @@ function renderBoardPuzzle(qn,stage){
           <strong>${title}</strong>
           <small class="toolbar-sub">${sub}</small>
         </div>
-        <span class="pill">${ladderProgress(qn.pattern,stage)}/2 to unlock next step</span>
+        <span class="pill">${ladderProgress(qn.pattern,stage)}/2 to unlock next</span>
       </div>
 
       <div class="puzzle-workspace">
         <!-- Construction Board (Drop Slots) -->
         <div>
           <div style="font-size:11px; font-weight:800; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px">
-            Construction Board (${placedCount} / ${ps.expected.length} Placed)
+            Construction Board (${placedCount}/${ps.expected.length})
           </div>
           <div class="puzzle-drop-board" id="puzzleBoard">
             ${ps.board.map((blockId,idx)=>{
@@ -1524,7 +1529,7 @@ function renderBoardPuzzle(qn,stage){
               return `
                 <div class="puzzle-slot ${block?'slot-filled':'slot-empty'}" data-slot="${idx}">
                   <span class="puzzle-slot-index">${idx+1}</span>
-                  ${block?renderPuzzlePiece(block,idx,stage):`<span class="slot-placeholder">Slot ${idx+1}: Tap or drop piece here</span>`}
+                  ${block?renderPuzzlePiece(block,idx,stage):`<span class="slot-placeholder">Slot ${idx+1}</span>`}
                 </div>
               `;
             }).join('')}
@@ -1534,22 +1539,22 @@ function renderBoardPuzzle(qn,stage){
         <!-- Available Pieces Tray -->
         <div class="puzzle-tray-section">
           <div class="puzzle-tray-header">
-            <strong>Available Pieces (${ps.tray.length} remaining)</strong>
-            <small style="color:var(--muted)">Tap piece to snap to board · Drag to slot</small>
+            <strong>Available Pieces (${ps.tray.length})</strong>
+            <small style="color:var(--muted)">Tap or drag to place</small>
           </div>
           <div class="puzzle-tray-pieces" id="puzzleTray">
             ${ps.tray.length?ps.tray.map(blockId=>{
               const block=ps.blocks.find(b=>b.id===blockId);
               return renderPuzzlePiece(block,-1,stage);
-            }).join(''):`<div class="puzzle-tray-empty">✨ All pieces are on the board! Click "Check Query" below to run.</div>`}
+            }).join(''):`<div class="puzzle-tray-empty">All pieces placed! Click "Check Query".</div>`}
           </div>
         </div>
       </div>
 
       <div class="actions" style="margin-top:14px">
         <button class="btn" id="checkPuzzleBtn">Check Query</button>
-        <button class="btn secondary" id="clearBoardBtn">Clear Board</button>
-        <button class="btn ghost" id="resetPuzzleBtn">Shuffle Pieces</button>
+        <button class="btn secondary" id="clearBoardBtn">Clear</button>
+        <button class="btn ghost" id="resetPuzzleBtn">Shuffle</button>
       </div>
 
       <div id="practiceFeedback" class="feedback ${ps.correct?'show good':''}">${ps.correct?successMessage(qn,stage):''}</div>
@@ -1590,7 +1595,7 @@ function renderFillPuzzle(qn){
       if(val){
         codeHtml+=`<span class="cloze-drop-slot filled" data-slot="${idx}"><code>${escapeHtml(val)}</code> <button type="button" class="piece-return-btn" data-return-cloze="${idx}" style="margin-left:4px; font-size:11px" title="Remove chip">✕</button></span>`;
       } else {
-        codeHtml+=`<span class="cloze-drop-slot slot-empty" data-slot="${idx}">[ drop or tap chip ]</span>`;
+        codeHtml+=`<span class="cloze-drop-slot slot-empty" data-slot="${idx}">[ gap ]</span>`;
       }
     }
   }
@@ -1608,15 +1613,15 @@ function renderFillPuzzle(qn){
     <div class="card editor-card puzzle-card">
       <div class="editor-toolbar">
         <div>
-          <strong>Fill the missing SQL pieces</strong>
-          <small class="toolbar-sub">Tap or drag word chips into the glowing empty slots.</small>
+          <strong>Fill in the Missing SQL</strong>
+          <small class="toolbar-sub">Tap or drag chips into empty slots.</small>
         </div>
         <span class="pill">${ladderProgress(qn.pattern,3)}/2 to unlock typing</span>
       </div>
 
       <div class="puzzle-workspace">
         <div class="word-bank">
-          <small>WORD BANK (TAP OR DRAG CHIPS)</small>
+          <small>WORD BANK</small>
           <div style="display:flex; flex-wrap:wrap; gap:8px;">${bankChips}</div>
         </div>
 
@@ -2126,7 +2131,7 @@ function renderMock(){
   if(mock?.active){renderMockActive();return;}
   const best=state.mockHistory.length?Math.max(...state.mockHistory.map(x=>x.score)):null;
   const avg=state.mockHistory.length?Math.round(state.mockHistory.reduce((s,x)=>s+x.score,0)/state.mockHistory.length*10)/10:null;
-  $('#page-mock').innerHTML=`<div class="card mock-start"><div class="eyebrow">SIMULATE THE PRACTICAL MIDTERM</div><h2>10 business questions · 20 minutes · no hints</h2><p style="color:var(--muted);line-height:1.7">You may run your SQL and inspect the result, just like using Supabase. The site will not tell you whether an answer is correct until the end. The exam covers the same six patterns you practiced.</p><div class="grid-3" style="margin:20px 0">${statCard('Attempts',state.mockHistory.length,'Completed mock exams')}${statCard('Best',best===null?'—':best+'/10','Highest score')}${statCard('Average',avg===null?'—':avg+'/10','Across all attempts')}</div><div class="actions"><button class="btn" id="startMockBtn">Start mock midterm</button></div></div>${state.mockHistory.length?`<div class="section card"><h3>Recent mock scores</h3>${state.mockHistory.slice(-5).reverse().map(x=>`<div class="metric-row"><span>${new Date(x.date).toLocaleString()}</span><code>${x.score}/10</code></div>`).join('')}</div>`:''}`;
+  $('#page-mock').innerHTML=`<div class="card mock-start"><div class="eyebrow">EXAM SIMULATION</div><h2>10 Questions · 20 Minutes</h2><p style="color:var(--muted);line-height:1.7">Simulates the real exam. Run queries as often as needed. Solutions and scores are revealed upon submission.</p><div class="grid-3" style="margin:20px 0">${statCard('Attempts',state.mockHistory.length,'Completed exams')}${statCard('Best',best===null?'—':best+'/10','Highest score')}${statCard('Average',avg===null?'—':avg+'/10','Average score')}</div><div class="actions"><button class="btn" id="startMockBtn">Start Mock Exam</button></div></div>${state.mockHistory.length?`<div class="section card"><h3>Recent Scores</h3>${state.mockHistory.slice(-5).reverse().map(x=>`<div class="metric-row"><span>${new Date(x.date).toLocaleDateString()}</span><code>${x.score}/10</code></div>`).join('')}</div>`:''}`;
   $('#startMockBtn').onclick=startMock;
 }
 function startMock(){
@@ -2140,23 +2145,23 @@ function renderMockActive(){
   $('#page-mock').innerHTML=`<div class="mock-shell"><div><div class="card question-card"><div class="question-type">QUESTION ${mock.index+1} OF ${mock.questions.length}</div><h3>${escapeHtml(qn.prompt)}</h3><div class="question-meta"><span class="pill">No hints</span><span class="pill">${PATTERNS[qn.pattern].title}</span></div></div><div class="card editor-card"><div class="editor-toolbar"><strong>Your SQL</strong><small>Run as often as you need</small></div><textarea id="mockEditor" class="sql-editor" spellcheck="false">${escapeHtml(mock.answers[mock.index]?.sql||'')}</textarea><div class="actions" style="margin-top:10px"><button class="btn secondary" id="mockRunBtn">Run query</button><button class="btn" id="mockSubmitBtn">Submit answer</button></div><div id="mockFeedback" class="feedback"></div><div id="mockResults"></div></div></div><aside class="card mock-side"><div class="eyebrow">TIME LEFT</div><div id="mockTimer" class="timer">${fmtTime(mock.seconds)}</div><div class="question-dots">${mock.questions.map((_,i)=>`<div class="question-dot ${i===mock.index?'current':''} ${mock.submitted[i]?'done':''}">${i+1}</div>`).join('')}</div><div class="actions" style="margin-top:16px"><button class="btn ghost small" id="mockPrevBtn" ${mock.index===0?'disabled':''}>Previous</button><button class="btn ghost small" id="mockNextBtn" ${mock.index===mock.questions.length-1?'disabled':''}>Next</button></div><button class="btn danger small" id="finishMockBtn" style="margin-top:12px;width:100%">Finish exam</button></aside></div>`;
   $('#mockRunBtn').onclick=()=>runMock(false); $('#mockSubmitBtn').onclick=()=>runMock(true); $('#mockPrevBtn').onclick=()=>saveMockDraftAndMove(-1); $('#mockNextBtn').onclick=()=>saveMockDraftAndMove(1); $('#finishMockBtn').onclick=()=>confirmFinishMock(); $('#mockEditor').addEventListener('input',()=>{mock.answers[mock.index]={...(mock.answers[mock.index]||{}),sql:$('#mockEditor').value};}); updateMockTimer();
 }
-async function runMock(submit){const sql=$('#mockEditor').value.trim();if(!sql){mockFeedback('bad','Write a query first.');return;}if(!isSafeSelect(sql)){mockFeedback('bad','Only SELECT / WITH queries are allowed.');return;}try{const user=await db.query(stripTrailingSemicolon(sql));renderResults('#mockResults',user);if(submit){const expected=await db.query(mock.questions[mock.index].sql);const correct=compareResults(user,expected);mock.answers[mock.index]={sql,correct};mock.submitted[mock.index]=true;toast('Answer submitted. Correctness will be shown after the exam.');if(mock.index<mock.questions.length-1)mock.index++;renderMockActive();}}catch(err){mockFeedback('bad',`SQL error: ${err.message||err}`);}}
+async function runMock(submit){const sql=$('#mockEditor').value.trim();if(!sql){mockFeedback('bad','Write a query first.');return;}if(!isSafeSelect(sql)){mockFeedback('bad','Only SELECT / WITH queries are allowed.');return;}try{const user=await db.query(stripTrailingSemicolon(sql));renderResults('#mockResults',user);if(submit){const expected=await db.query(mock.questions[mock.index].sql);const correct=compareResults(user,expected);mock.answers[mock.index]={sql,correct};mock.submitted[mock.index]=true;toast('Answer submitted. Results shown after finishing.');if(mock.index<mock.questions.length-1)mock.index++;renderMockActive();}}catch(err){mockFeedback('bad',`SQL error: ${err.message||err}`);}}
 function mockFeedback(type,msg){const el=$('#mockFeedback');if(!el)return;el.className=`feedback show ${type}`;el.textContent=msg;}
 function saveMockDraftAndMove(delta){mock.answers[mock.index]={...(mock.answers[mock.index]||{}),sql:$('#mockEditor')?.value||mock.answers[mock.index]?.sql||''};mock.index=Math.max(0,Math.min(mock.questions.length-1,mock.index+delta));renderMockActive();}
 function updateMockTimer(){const el=$('#mockTimer');if(el){el.textContent=fmtTime(mock.seconds);el.classList.toggle('low',mock.seconds<180);}}
 function fmtTime(s){return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.max(0,s%60)).padStart(2,'0')}`;}
-function confirmFinishMock(){showModal('Finish mock midterm?','Unsubmitted questions will count as incorrect.',[{label:'Keep working',cls:'secondary'},{label:'Finish exam',cls:'danger',action:finishMock}]);}
+function confirmFinishMock(){showModal('Finish exam?','Unsubmitted questions will count as incorrect.',[{label:'Keep working',cls:'secondary'},{label:'Finish exam',cls:'danger',action:finishMock}]);}
 function finishMock(){if(!mock?.active)return;clearInterval(mockTimerHandle);const score=mock.answers.filter(x=>x?.correct).length;const result={score,date:new Date().toISOString(),questions:mock.questions.map((q,i)=>({id:q.id,prompt:q.prompt,correct:!!mock.answers[i]?.correct,sql:mock.answers[i]?.sql||'',solution:q.sql}))};state.mockHistory.push(result);state.xp+=score*8;Object.keys(PATTERNS).forEach(pid=>{const qs=result.questions.filter(x=>QUESTIONS.find(q=>q.id===x.id)?.pattern===pid);const good=qs.filter(x=>x.correct).length;if(qs.length)state.patternScores[pid]=Math.min(100,Math.max(0,(state.patternScores[pid]||0)+good*3-(qs.length-good)));});updateStreak(true);saveProgress();mock={active:false,lastResult:result};renderMockResult(result);}
-function renderMockResult(result){$('#page-mock').innerHTML=`<div class="hero"><div class="eyebrow">MOCK COMPLETE</div><h1>${result.score}/10</h1><p>${result.score>=8?'Strong result. Review the missed patterns, then try another mock later.':result.score>=6?'You are close. Review the questions you missed and practice those patterns.':'Use the review below to identify exactly which patterns need work.'}</p><div class="actions"><button class="btn" id="retryMockBtn">Start another mock</button><button class="btn secondary" id="homeAfterMockBtn">Back to home</button></div></div><div class="section card"><h3>Question review</h3><div class="mock-review">${result.questions.map((x,i)=>`<div class="review-item ${x.correct?'good':'bad'}"><strong>${x.correct?'✓':'✗'} ${i+1}. ${escapeHtml(x.prompt)}</strong>${!x.correct?`<details style="margin-top:8px"><summary>Show one correct solution</summary><div class="code-block" style="margin-top:8px">${escapeHtml(formatSQL(x.solution))}</div></details>`:''}</div>`).join('')}</div></div>`;$('#retryMockBtn').onclick=()=>{mock=null;startMock();};$('#homeAfterMockBtn').onclick=()=>{mock=null;navigate('home');};}
+function renderMockResult(result){$('#page-mock').innerHTML=`<div class="hero"><div class="eyebrow">MOCK COMPLETE</div><h1>${result.score}/10</h1><p>${result.score>=8?'Strong score! Review any missed patterns and try again later.':result.score>=6?'Almost there. Review the missed queries below.':'Review the solutions below to pinpoint the patterns needing practice.'}</p><div class="actions"><button class="btn" id="retryMockBtn">Try Again</button><button class="btn secondary" id="homeAfterMockBtn">Back to Home</button></div></div><div class="section card"><h3>Question Review</h3><div class="mock-review">${result.questions.map((x,i)=>`<div class="review-item ${x.correct?'good':'bad'}"><strong>${x.correct?'✓':'✗'} ${i+1}. ${escapeHtml(x.prompt)}</strong>${!x.correct?`<details style="margin-top:8px"><summary>Show solution</summary><div class="code-block" style="margin-top:8px">${escapeHtml(formatSQL(x.solution))}</div></details>`:''}</div>`).join('')}</div></div>`;$('#retryMockBtn').onclick=()=>{mock=null;startMock();};$('#homeAfterMockBtn').onclick=()=>{mock=null;navigate('home');};}
 
 function renderCheat(){
-  $('#page-cheatsheet').innerHTML=`<div class="hero"><div class="eyebrow">THE ONLY SHEET TO MEMORIZE FIRST</div><h1>Question → SQL</h1><p>Do not memorize thirty finished queries. Memorize the metric, the joins, and one skeleton.</p></div><div class="section cheat-grid"><div class="card"><h3>4 metrics to know</h3><div class="metric-list">${metricRowsMini()}</div></div><div class="card"><h3>Main query skeleton</h3><div class="code-block">SELECT\n  dimension,\n  calculation\nFROM fact_order_items f\nJOIN dimension_table d\n  ON f.dimension_id = d.dimension_id\nWHERE condition\nGROUP BY dimension\nORDER BY calculation DESC\nLIMIT 10;</div></div><div class="card"><h3>Joins</h3><div class="code-block">-- product\nJOIN dim_product p\n  ON f.product_id = p.product_id\n\n-- customer\nJOIN dim_customer c\n  ON f.customer_id = c.customer_id\n\n-- seller\nJOIN dim_seller s\n  ON f.seller_id = s.seller_id\n\n-- payment\nJOIN dim_payment pay\n  ON f.payment_id = pay.payment_id\n\n-- shipping\nJOIN dim_shipping sh\n  ON f.shipping_id = sh.shipping_id</div></div><div class="card"><h3>Date filters</h3><div class="code-block">-- year\nWHERE EXTRACT(YEAR FROM order_date) = 2026\n\n-- month\nWHERE EXTRACT(MONTH FROM order_date) = 8\n\n-- monthly grouping\nDATE_TRUNC('month', order_date)::DATE</div><div class="remember"><strong>Trend rule:</strong> ORDER BY month/year, not by sales.</div></div></div><div class="section card"><h3>Before you type, answer these five questions</h3><div class="grid-4"><div class="decoder-item"><small>1</small><strong>What thing?</strong><br><small>Product, category, customer, seller…</small></div><div class="decoder-item"><small>2</small><strong>What metric?</strong><br><small>Sales, orders, units, spending…</small></div><div class="decoder-item"><small>3</small><strong>What filters?</strong><br><small>City, year, category…</small></div><div class="decoder-item"><small>4–5</small><strong>How sorted? How many?</strong><br><small>DESC? Chronological? Top 10?</small></div></div></div>`;
+  $('#page-cheatsheet').innerHTML=`<div class="hero"><div class="eyebrow">EXAM CHEAT SHEET</div><h1>SQL Quick Reference</h1><p>Key metrics, joins, and the standard query skeleton.</p></div><div class="section cheat-grid"><div class="card"><h3>4 Core Metrics</h3><div class="metric-list">${metricRowsMini()}</div></div><div class="card"><h3>Query Skeleton</h3><div class="code-block">SELECT\n  dimension,\n  calculation\nFROM fact_order_items f\nJOIN dimension_table d\n  ON f.dimension_id = d.dimension_id\nWHERE condition\nGROUP BY dimension\nORDER BY calculation DESC\nLIMIT 10;</div></div><div class="card"><h3>Joins</h3><div class="code-block">-- product\nJOIN dim_product p\n  ON f.product_id = p.product_id\n\n-- customer\nJOIN dim_customer c\n  ON f.customer_id = c.customer_id\n\n-- seller\nJOIN dim_seller s\n  ON f.seller_id = s.seller_id\n\n-- payment\nJOIN dim_payment pay\n  ON f.payment_id = pay.payment_id\n\n-- shipping\nJOIN dim_shipping sh\n  ON f.shipping_id = sh.shipping_id</div></div><div class="card"><h3>Date Filters</h3><div class="code-block">-- year\nWHERE EXTRACT(YEAR FROM order_date) = 2026\n\n-- month\nWHERE EXTRACT(MONTH FROM order_date) = 8\n\n-- monthly grouping\nDATE_TRUNC('month', order_date)::DATE</div><div class="remember"><strong>Trend rule:</strong> ORDER BY month/year ASC, not by sales.</div></div></div><div class="section card"><h3>5-Step Query Checklist</h3><div class="grid-4"><div class="decoder-item"><small>1</small><strong>Dimension</strong><br><small>Product, category, customer, seller</small></div><div class="decoder-item"><small>2</small><strong>Metric</strong><br><small>net_sales, orders, quantity, total_paid</small></div><div class="decoder-item"><small>3</small><strong>Filters</strong><br><small>City, year, category</small></div><div class="decoder-item"><small>4–5</small><strong>Sort & Limit</strong><br><small>DESC for ranking, ASC for trends, LIMIT N</small></div></div></div>`;
 }
 function metricRowsMini(){return [['Sales','SUM(net_sales)'],['Orders','COUNT(DISTINCT order_number)'],['Units sold','SUM(quantity)'],['Customer spending','SUM(total_paid)']].map(x=>`<div class="metric-row"><span>${x[0]}</span><code>${x[1]}</code></div>`).join('');}
 
 function renderSchema(){
-  $('#page-schema').innerHTML=`<div class="grid-2"><div class="card"><h3>NexaCart star schema</h3><p class="schema-note">The fact table has 25,000 order-item rows representing 10,000 unique orders. The grain is <strong>one product line inside one order</strong>.</p><div class="schema-stage"><div class="schema-table customer"><h4>dim_customer</h4><ul><li class="key">customer_id PK</li><li>customer_name</li><li>city</li></ul></div><div class="schema-table product"><h4>dim_product</h4><ul><li class="key">product_id PK</li><li>product_name</li><li>category</li><li>brand</li></ul></div><div class="schema-table fact"><h4>fact_order_items</h4><ul><li class="key">order_item_id PK</li><li>order_number</li><li>order_date</li><li class="key">customer_id FK</li><li class="key">product_id FK</li><li class="key">seller_id FK</li><li class="key">payment_id FK</li><li class="key">shipping_id FK</li><li>quantity</li><li>unit_price</li><li>discount_amount</li><li>shipping_fee</li><li>gross_sales</li><li>net_sales</li><li>total_paid</li></ul></div><div class="schema-table seller"><h4>dim_seller</h4><ul><li class="key">seller_id PK</li><li>shop_name</li><li>seller_city</li></ul></div><div class="schema-table payment"><h4>dim_payment</h4><ul><li class="key">payment_id PK</li><li>payment_method</li></ul></div><div class="schema-table shipping"><h4>dim_shipping</h4><ul><li class="key">shipping_id PK</li><li>shipping_method</li><li>courier_name</li></ul></div></div></div><div><div class="card"><h3>Dataset facts</h3>${statCard('Customers','500','dimension records')}${statCard('Products','150','catalog products')}${statCard('Orders','10,000','COUNT(DISTINCT order_number)')}${statCard('Fact rows','25,000','COUNT(*)')}</div><div class="card" style="margin-top:16px"><h3>Why 25,000 rows but 10,000 orders?</h3><p class="schema-note">One order can contain several products. Each different product becomes its own fact row. Example: one order containing Earbuds + Charger + Cable = 1 unique order but 3 fact rows.</p><div class="code-block">COUNT(*)\n→ 25,000 order-item rows\n\nCOUNT(DISTINCT order_number)\n→ 10,000 unique orders\n\nSUM(quantity)\n→ physical units sold</div></div><div class="card" style="margin-top:16px"><h3>Database safety</h3><p class="schema-note">The training database is local to this browser. Practice only allows SELECT queries, so you cannot accidentally damage it.</p><button class="btn danger small" id="resetDbBtn">Rebuild local training database</button></div></div></div>`;
-  $('#resetDbBtn').onclick=()=>showModal('Rebuild the local training database?','This resets only the practice database. Your learning progress remains saved.',[{label:'Cancel',cls:'secondary'},{label:'Rebuild database',cls:'danger',action:async()=>{localStorage.removeItem('unused');await seedDatabase();toast('Training database rebuilt.');}}]);
+  $('#page-schema').innerHTML=`<div class="grid-2"><div class="card"><h3>Star Schema</h3><p class="schema-note">Grain: <strong>1 row = 1 product line inside an order</strong> (25,000 items across 10,000 orders).</p><div class="schema-stage"><div class="schema-table customer"><h4>dim_customer</h4><ul><li class="key">customer_id PK</li><li>customer_name</li><li>city</li></ul></div><div class="schema-table product"><h4>dim_product</h4><ul><li class="key">product_id PK</li><li>product_name</li><li>category</li><li>brand</li></ul></div><div class="schema-table fact"><h4>fact_order_items</h4><ul><li class="key">order_item_id PK</li><li>order_number</li><li>order_date</li><li class="key">customer_id FK</li><li class="key">product_id FK</li><li class="key">seller_id FK</li><li class="key">payment_id FK</li><li class="key">shipping_id FK</li><li>quantity</li><li>unit_price</li><li>discount_amount</li><li>shipping_fee</li><li>gross_sales</li><li>net_sales</li><li>total_paid</li></ul></div><div class="schema-table seller"><h4>dim_seller</h4><ul><li class="key">seller_id PK</li><li>shop_name</li><li>seller_city</li></ul></div><div class="schema-table payment"><h4>dim_payment</h4><ul><li class="key">payment_id PK</li><li>payment_method</li></ul></div><div class="schema-table shipping"><h4>dim_shipping</h4><ul><li class="key">shipping_id PK</li><li>shipping_method</li><li>courier_name</li></ul></div></div></div><div><div class="card"><h3>Schema Metrics</h3>${statCard('Customers','500','dim_customer records')}${statCard('Products','150','dim_product records')}${statCard('Orders','10,000','COUNT(DISTINCT order_number)')}${statCard('Fact rows','25,000','COUNT(*)')}</div><div class="card" style="margin-top:16px"><h3>Why 25,000 rows for 10,000 orders?</h3><p class="schema-note">An order can contain multiple items. Each product purchased is one row in the fact table.</p><div class="code-block">COUNT(*)\n→ 25,000 order-item rows\n\nCOUNT(DISTINCT order_number)\n→ 10,000 unique orders\n\nSUM(quantity)\n→ Total units sold</div></div><div class="card" style="margin-top:16px"><h3>Database Reset</h3><p class="schema-note">Resets the local practice database. Your learning progress remains intact.</p><button class="btn danger small" id="resetDbBtn">Rebuild local database</button></div></div></div>`;
+  $('#resetDbBtn').onclick=()=>showModal('Rebuild database?','Resets only the local tables. Progress is kept safe.',[{label:'Cancel',cls:'secondary'},{label:'Rebuild',cls:'danger',action:async()=>{localStorage.removeItem('unused');await seedDatabase();toast('Database rebuilt.');}}]);
 }
 
 function renderResults(selector,result){const target=$(selector);if(!target)return;const rows=result.rows||[];if(!rows.length){target.innerHTML='<div class="empty-state">Query returned 0 rows.</div>';return;}const cols=Object.keys(rows[0]);target.innerHTML=`<div class="results-wrap"><table class="result-table"><thead><tr>${cols.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,100).map(r=>`<tr>${cols.map(c=>`<td>${escapeHtml(displayValue(r[c]))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${rows.length>100?`<small style="color:#7484aa">Showing first 100 of ${rows.length} rows.</small>`:''}`;}
@@ -2403,16 +2408,16 @@ function renderFlashcards() {
       <div class="flashcard-progress-card">
         <div class="flashcard-progress-info">
           <div>
-            <strong>${masteredCount} of ${FLASHCARDS.length} Mastered (${masteredPct}%)</strong>
+            <strong>${masteredCount} / ${FLASHCARDS.length} Mastered (${masteredPct}%)</strong>
             <br>
-            <small>Active recall mode · Tap card to flip · Swipe or use arrows</small>
+            <small>Active Recall · Tap card to flip</small>
           </div>
         </div>
-        <div style="min-width: 110px; text-align: right;">
-          <div class="progress-track" style="height: 6px; width: 100px; margin-left: auto;">
+        <div style="min-width: 100px; text-align: right;">
+          <div class="progress-track" style="height: 6px; width: 90px; margin-left: auto;">
             <span style="width: ${masteredPct}%; background: var(--good);"></span>
           </div>
-          <small style="color: var(--muted); font-size: 10px;">${pool.length} in this filter</small>
+          <small style="color: var(--muted); font-size: 10px;">${pool.length} in category</small>
         </div>
       </div>
 
@@ -2444,7 +2449,7 @@ function renderFlashcards() {
                   </span>
                 </div>
                 <div class="card-tap-prompt">
-                  <span>👆 Tap anywhere on card or press Space to see SQL answer</span>
+                  <span>👆 Tap card to flip</span>
                 </div>
               </div>
             </div>
@@ -2453,7 +2458,7 @@ function renderFlashcards() {
             <div class="flashcard-face flashcard-back">
               <div class="card-top-row">
                 <span class="card-badge" style="background: rgba(124,140,255,0.16); border-color: rgba(124,140,255,0.4); color: #9bb3ff;">SQL SOLUTION</span>
-                <span class="card-tap-prompt" style="font-size:11px;">👆 Tap to flip back</span>
+                <span class="card-tap-prompt" style="font-size:11px;">👆 Tap to flip</span>
               </div>
 
               <div class="card-answer-body">
@@ -2468,7 +2473,6 @@ function renderFlashcards() {
 
               <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--muted);">
                 <span>Table: <code>${escapeHtml(card.table)}</code></span>
-                <span style="color:var(--accent); font-weight:700;">NexaCart Star Schema</span>
               </div>
             </div>
           </div>
@@ -2496,11 +2500,11 @@ function renderFlashcards() {
 
         <div class="actions" style="margin: 0;">
           <button class="btn" id="fcFlipBtn">
-            🔄 Flip Card
+            🔄 Flip
           </button>
           ${card ? `
             <button class="btn ${isMastered ? 'secondary' : 'good'}" id="fcMasterBtn" style="${isMastered ? 'color: var(--good); border-color: rgba(98,212,157,0.4);' : ''}">
-              ${isMastered ? '★ Mastered' : '☆ Mark as Mastered (+5 XP)'}
+              ${isMastered ? '★ Mastered' : '☆ Master (+5 XP)'}
             </button>
           ` : ''}
           <button class="btn ghost small" id="fcShuffleBtn" title="Shuffle cards">
@@ -2511,7 +2515,7 @@ function renderFlashcards() {
 
       <!-- Keyboard & Mobile Tips -->
       <div style="text-align: center; font-size: 11px; color: #5a6b8c; padding: 4px 0 16px;">
-        💡 <strong>Mobile:</strong> Swipe left/right to change cards, tap to flip. &nbsp;|&nbsp; <strong>Desktop:</strong> ←/→ arrows, Space to flip, M to master.
+        Swipe or arrows to change · Tap or Space to flip · M to master
       </div>
     </div>
   `;
