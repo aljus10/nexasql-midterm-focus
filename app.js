@@ -442,9 +442,120 @@ async function handleSignOut() {
     await supabaseClient.auth.signOut();
     currentUser = null;
     updateCloudUI();
-    toast('Logged out of Supabase Cloud. Local progress kept.');
+    showAuthGate();
+    toast('Logged out of Supabase Cloud.');
   } catch (e) {
     toast(`Sign out error: ${e.message}`);
+  }
+}
+
+function showAuthGate() {
+  const gate = $('#authGate');
+  const app = $('#app');
+  if (gate) gate.classList.remove('hidden');
+  if (app) app.classList.add('hidden');
+  const pass = $('#gateLoginPassword');
+  if (pass) pass.value = '';
+  const err = $('#gateAuthError');
+  if (err) { err.textContent = ''; err.classList.remove('show'); }
+}
+
+function showApp(user) {
+  const gate = $('#authGate');
+  const app = $('#app');
+  if (gate) gate.classList.add('hidden');
+  if (app) app.classList.remove('hidden');
+  updateCloudUI();
+}
+
+let gateMode = 'login'; // 'login' or 'signup'
+
+function bindAuthGate() {
+  const form = $('#gateLoginForm');
+  const toggleBtn = $('#gateToggleModeBtn');
+  const guestBtn = $('#gateGuestBtn');
+  const title = $('#authGateTitle');
+  const sub = $('#authGateSub');
+  const btn = $('#gateLoginBtn');
+  const err = $('#gateAuthError');
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      gateMode = gateMode === 'login' ? 'signup' : 'login';
+      if (gateMode === 'signup') {
+        if (title) title.textContent = 'Create NexaSQL Account';
+        if (sub) sub.textContent = 'Create your account with email and password to sync your progress automatically across devices.';
+        if (btn) btn.textContent = 'Sign up';
+        toggleBtn.textContent = 'Already have an account? Sign in';
+      } else {
+        if (title) title.textContent = 'Sign in to NexaSQL';
+        if (sub) sub.textContent = 'Your progress syncs through Supabase Cloud, so your XP, streaks, and unlocked stages follow you from laptop to phone.';
+        if (btn) btn.textContent = 'Sign in';
+        toggleBtn.textContent = 'Need an account? Sign up';
+      }
+      if (err) { err.textContent = ''; err.classList.remove('show'); }
+    });
+  }
+
+  if (guestBtn) {
+    guestBtn.addEventListener('click', () => {
+      showApp(null);
+      toast('Continuing in offline / guest mode.');
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (err) { err.textContent = ''; err.classList.remove('show'); }
+      const email = $('#gateLoginEmail')?.value?.trim();
+      const password = $('#gateLoginPassword')?.value;
+
+      if (!supabaseClient) {
+        if (err) {
+          err.textContent = 'Supabase is connecting or not configured yet. Please check your Vercel Environment Variables.';
+          err.classList.add('show');
+        }
+        return;
+      }
+
+      btn.disabled = true;
+      const prevText = btn.textContent;
+      btn.textContent = gateMode === 'login' ? 'Signing in…' : 'Creating account…';
+
+      try {
+        if (gateMode === 'login') {
+          const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error || !data?.user) {
+            let msg = error?.message || 'Could not sign in.';
+            if (msg.includes('Failed to fetch')) {
+              msg = 'Failed to fetch: Please verify your Supabase project is active and URL is reachable.';
+            }
+            if (err) { err.textContent = msg; err.classList.add('show'); }
+            return;
+          }
+          currentUser = data.user;
+          showApp(currentUser);
+          await syncFromCloud();
+          toast(`Welcome back, ${currentUser.email}! ☁️`);
+        } else {
+          const { data, error } = await supabaseClient.auth.signUp({ email, password });
+          if (error || !data?.user) {
+            if (err) { err.textContent = error?.message || 'Could not sign up.'; err.classList.add('show'); }
+            return;
+          }
+          currentUser = data.user;
+          showApp(currentUser);
+          await syncToCloud(true);
+          toast('Account created! Welcome to NexaSQL 🚀');
+        }
+      } catch (ex) {
+        if (err) { err.textContent = ex.message || 'Authentication error'; err.classList.add('show'); }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prevText;
+      }
+    });
   }
 }
 
@@ -780,13 +891,18 @@ function launchConfetti() {
 
 async function init() {
   bindShell();
+  bindAuthGate();
   updateSoundButtonUI();
-  initSupabase();
+  await initSupabase();
   await initDatabase();
   updateStreak(false);
   renderAll();
   $('#boot').classList.add('hidden');
-  $('#app').classList.remove('hidden');
+  if (currentUser) {
+    showApp(currentUser);
+  } else {
+    showAuthGate();
+  }
 }
 
 function bindShell() {

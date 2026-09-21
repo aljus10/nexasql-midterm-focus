@@ -18,6 +18,33 @@
     </div>
   </div>
 
+  <div id="authGate" class="auth-gate hidden">
+    <div class="auth-card">
+      <div class="auth-mark">N</div>
+      <div class="eyebrow">PRACTICAL MIDTERM FOCUS</div>
+      <h1 id="authGateTitle">Sign in to NexaSQL</h1>
+      <p id="authGateSub">Your progress syncs through Supabase Cloud, so your XP, streaks, and unlocked stages follow you from laptop to phone.</p>
+
+      <form class="auth-form" id="gateLoginForm">
+        <label class="auth-label">Email
+          <input class="auth-input" id="gateLoginEmail" type="email" autocomplete="email" required placeholder="you@example.com" />
+        </label>
+        <label class="auth-label">Password
+          <input class="auth-input" id="gateLoginPassword" type="password" autocomplete="current-password" required placeholder="Your password" />
+        </label>
+        <button class="btn" id="gateLoginBtn" type="submit" style="width:100%; margin-top:4px">Sign in</button>
+      </form>
+      <div class="auth-error" id="gateAuthError" role="alert"></div>
+
+      <div class="auth-note">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <button type="button" class="text-button" id="gateToggleModeBtn" style="color:var(--accent-2); font-size:11px; padding:0">Need an account? Sign up</button>
+          <button type="button" class="text-button" id="gateGuestBtn" style="color:#7182a8; font-size:11px; padding:0">Continue as guest</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="app" class="app-shell hidden">
     <aside class="sidebar">
       <div class="brand">
