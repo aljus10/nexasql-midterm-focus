@@ -323,18 +323,30 @@ async function syncToCloud(showToast = false) {
   cloudSyncing = true;
   updateCloudUI();
   try {
-    const { error } = await supabaseClient
-      .from('user_progress')
+    // Try nexasql_progress first (coexists cleanly with mips_progress in same project)
+    let res = await supabaseClient
+      .from('nexasql_progress')
       .upsert({
         user_id: currentUser.id,
-        email: currentUser.email,
         progress: state,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
 
-    if (error) {
-      console.warn('Cloud sync issue:', error);
-      if (showToast) toast(`Cloud sync: ${error.message}`);
+    if (res.error && (res.error.message?.includes('does not exist') || res.error.code === '42P01')) {
+      // Fallback if user created user_progress table instead
+      res = await supabaseClient
+        .from('user_progress')
+        .upsert({
+          user_id: currentUser.id,
+          email: currentUser.email,
+          progress: state,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+    }
+
+    if (res.error) {
+      console.warn('Cloud sync issue:', res.error);
+      if (showToast) toast(`Cloud sync: ${res.error.message}`);
     } else {
       if (showToast) toast('Progress synced to Supabase Cloud! ☁️');
     }
@@ -351,16 +363,28 @@ async function syncFromCloud() {
   cloudSyncing = true;
   updateCloudUI();
   try {
-    const { data, error } = await supabaseClient
-      .from('user_progress')
+    // Try nexasql_progress first
+    let { data, error } = await supabaseClient
+      .from('nexasql_progress')
       .select('progress, updated_at')
       .eq('user_id', currentUser.id)
       .maybeSingle();
 
+    if (error && (error.message?.includes('does not exist') || error.code === '42P01')) {
+      // Fallback to user_progress
+      const fallback = await supabaseClient
+        .from('user_progress')
+        .select('progress, updated_at')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+      data = fallback.data;
+      error = fallback.error;
+    }
+
     if (error) {
       console.warn('Error fetching cloud progress:', error);
-    } else if (data && data.progress) {
-      const cloudState = data.progress;
+    } else if (data && (data.progress || data.data)) {
+      const cloudState = data.progress || data.data;
       if ((cloudState.xp || 0) >= (state.xp || 0)) {
         state = {
           ...defaultProgress(),
@@ -378,7 +402,7 @@ async function syncFromCloud() {
       syncToCloud();
     }
   } catch (err) {
-    console.error('Failed to sync from cloud:', err);
+    console.error('Error fetching cloud progress:', err);
   } finally {
     cloudSyncing = false;
     updateCloudUI();
@@ -570,17 +594,18 @@ function showSupabaseConfigModal() {
 
           <div style="margin-top:6px">
             <label style="font-size:11px; font-weight:700; color:var(--muted); display:block; margin-bottom:5px">
-              Required Supabase Table (Run once in your Supabase SQL Editor):
+              Required Supabase Table (You can run this in your existing <code>mips-mastery</code> project alongside <code>mips_progress</code>):
             </label>
-            <div class="sql-copy-box">CREATE TABLE IF NOT EXISTS public.user_progress (
+            <div class="sql-copy-box">CREATE TABLE IF NOT EXISTS public.nexasql_progress (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT,
   progress JSONB NOT NULL DEFAULT '{}'::jsonb,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
-ALTER TABLE public.user_progress ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own progress"
-  ON public.user_progress FOR ALL
+
+ALTER TABLE public.nexasql_progress ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own nexasql progress"
+  ON public.nexasql_progress FOR ALL
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);</div>
           </div>

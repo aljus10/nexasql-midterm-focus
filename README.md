@@ -149,24 +149,27 @@ SUM(total_paid)
 
 NexaSQL supports saving your progress online across multiple devices and browsers via Supabase.
 
-### 1. Create the `user_progress` table in Supabase
-Go to your **Supabase Dashboard** -> **SQL Editor**, paste the following script, and click **Run**:
+> [!TIP]
+> **Can I use the same Supabase project from another app (e.g. `mips-mastery`)?**
+> **YES!** Supabase free tier limits you to 2 projects, but **a single project can hold unlimited tables**. You can run the script below right inside your existing `mips-mastery` database. It creates `public.nexasql_progress` right next to `public.mips_progress`. Both tables share the same `auth.users`, so your existing login works immediately!
+
+### 1. Create the `nexasql_progress` table in Supabase
+Go to your **Supabase Dashboard** (e.g. your `mips-mastery` project) -> **SQL Editor**, paste this script, and click **Run**:
 
 ```sql
--- 1. Create table for user progress
-CREATE TABLE IF NOT EXISTS public.user_progress (
+-- 1. Create table for NexaSQL user progress
+CREATE TABLE IF NOT EXISTS public.nexasql_progress (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT,
   progress JSONB NOT NULL DEFAULT '{}'::jsonb,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 2. Enable Row Level Security (RLS)
-ALTER TABLE public.user_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.nexasql_progress ENABLE ROW LEVEL SECURITY;
 
 -- 3. Policy: users can read/write only their own row
-CREATE POLICY "Users can manage own progress"
-  ON public.user_progress
+CREATE POLICY "Users can manage own nexasql progress"
+  ON public.nexasql_progress
   FOR ALL
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
@@ -174,8 +177,8 @@ CREATE POLICY "Users can manage own progress"
 
 ### 2. Connect in NexaSQL
 1. Click the **Connect Cloud** button in the top header or sidebar.
-2. Enter your **Supabase Project URL** (e.g., `https://xyz.supabase.co`) and **Supabase Anon Key** (from Project Settings -> API).
-3. Switch between **Sign In** or **Sign Up** using your email and password.
+2. Enter your **Supabase Project URL** (e.g., `https://xyz.supabase.co`) and **Supabase Anon Key** (from Project Settings -> API) from your existing Supabase project.
+3. Sign in with your existing email and password (or create a new one).
 4. Your XP, study streak, pattern scores, and unlocked ladder stages will automatically sync to your Supabase cloud account!
 
 ---
