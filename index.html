@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>NexaSQL Midterm Focus</title>
+  <link rel="stylesheet" href="styles.css?v=6" />
+</head>
+<body>
+  <div id="boot" class="boot-screen">
+    <div class="boot-card">
+      <div class="logo-mark">N</div>
+      <h1>NexaSQL Midterm Focus</h1>
+      <p id="bootMessage">Starting your local PostgreSQL practice database…</p>
+      <div class="loader"><span></span></div>
+      <small>First launch can take a little longer while the practice database is created.</small>
+    </div>
+  </div>
+
+  <div id="app" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-mark small">N</div>
+        <div>
+          <strong>NexaSQL</strong>
+          <span>Midterm Focus</span>
+        </div>
+      </div>
+
+      <nav id="nav" class="nav-list">
+        <button class="nav-item active" data-page="home"><span>⌂</span> Home</button>
+        <button class="nav-item" data-page="learn"><span>◫</span> Learn</button>
+        <button class="nav-item" data-page="practice"><span>▶</span> Practice</button>
+        <button class="nav-item" data-page="mock"><span>◎</span> Mock Midterm</button>
+        <button class="nav-item" data-page="cheatsheet"><span>≡</span> Cheat Sheet</button>
+        <button class="nav-item" data-page="schema"><span>◇</span> Schema</button>
+      </nav>
+
+      <div class="side-progress">
+        <div class="side-progress-row">
+          <span>Readiness</span>
+          <strong id="sideReadiness">0%</strong>
+        </div>
+        <div class="mini-progress"><span id="sideReadinessBar"></span></div>
+      </div>
+
+      <div class="side-cloud" id="sideCloudCard"></div>
+
+      <div class="side-actions">
+        <button id="exportProgressBtn" class="text-button">Export progress</button>
+        <label class="text-button file-button">Import progress<input id="importProgressInput" type="file" accept="application/json,.json" /></label>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="mobileMenuBtn" class="icon-button mobile-only">☰</button>
+        <div>
+          <div class="eyebrow" id="pageEyebrow">MIDTERM STUDY</div>
+          <h2 id="pageTitle">Home</h2>
+        </div>
+        <div class="top-stats">
+          <button id="soundToggleBtn" class="sound-toggle-btn" title="Toggle Sound Effects">🔊</button>
+          <div class="top-stat"><span>🔥</span><strong id="streakValue">0</strong><small>day streak</small></div>
+          <div class="top-stat"><span>XP</span><strong id="xpValue">0</strong><small>earned</small></div>
+        </div>
+      </header>
+
+      <section id="page-home" class="page active"></section>
+      <section id="page-learn" class="page"></section>
+      <section id="page-practice" class="page"></section>
+      <section id="page-mock" class="page"></section>
+      <section id="page-cheatsheet" class="page"></section>
+      <section id="page-schema" class="page"></section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <div id="modalRoot"></div>
+  <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
+  <script type="module" src="app.js?v=7"></script>
+</body>
+</html>
